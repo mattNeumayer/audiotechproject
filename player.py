@@ -8,9 +8,11 @@ class Player:
         self.stream = None
         self.chunk_size = None
         self.data = None
-        self.sample_rate = 44000
+        self.sample_rate = 44100
         self.avg = 0
         self.n = 1
+        self.recoding_data = []
+        self.record = False
 
     def get_defaults(self):
         defaults = dict()
@@ -28,6 +30,9 @@ class Player:
 
     def start(self, settings, callback):
         print(settings['api'])
+
+        if self.stream:
+            self.stop()
 
         # TODO: format is hardcoded
         in_format = pyaudio.paInt16
@@ -52,12 +57,14 @@ class Player:
         print("Supported: " + str(is_supported))
 
         if is_supported:
-            def stream_callback(in_data, frame_count, time_info, status):
-                self.chunk_size = int(len(in_data) / 2)
+            self.record = settings['record']
+            if self.record:
+                self.recoding_data = []
 
+            def stream_callback(in_data, frame_count, time_info, status):
                 # TODO: format hardcoded
-                self.data = np.fromstring(in_data, np.int16)
-                self.fft()
+                self.chunk_size = int(len(in_data) / 2)
+                self.process_frame(in_data, frame_count, self.chunk_size, time_info)
                 return in_data, pyaudio.paContinue
 
             # TODO: in == out in a lot of cases
@@ -83,6 +90,16 @@ class Player:
         if self.stream:
             self.chunk_size = None
             self.stream.stop_stream()
+
+    def stop_recoding(self):
+        self.record = False
+
+    def process_frame(self, frame_data, frame_count, frame_length, time_info):
+        if self.record:
+            self.recoding_data.append(frame_data)
+
+        self.data = np.fromstring(frame_data, np.int16)
+        self.fft()
 
     def fft(self):
         if self.chunk_size is None or self.data is None:

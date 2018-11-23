@@ -7,12 +7,13 @@ class PlayerControlsGUI(tk.Frame):
         tk.Frame.__init__(self, parent, *args, **kwargs)
 
         col_idx = 0
-        self._is_playing = False
+        self._is_recording = False
         self.record_button = ttk.Button(self, text="")
         self.record_button.grid(row=0, column=col_idx, sticky=tk.E)
         self.set_recoding(False)
 
         col_idx += 1
+        self._is_playing = False
         self.play_button = ttk.Button(self, text="")
         self.play_button.grid(row=0, column=col_idx, sticky=tk.E)
         self.set_playing(False)
@@ -28,13 +29,13 @@ class PlayerControlsGUI(tk.Frame):
     def set_recoding(self, is_recording):
         self._is_recording = is_recording
 
-        if is_recording:
+        if not is_recording:
             self.record_button['text'] = "Record"
         else:
             self.record_button['text'] = "Stop Recoding"
 
     def is_recoding(self):
-        return self._is_recoding
+        return self._is_recording
 
     def is_playing(self):
         return self._is_playing

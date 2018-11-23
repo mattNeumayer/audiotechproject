@@ -10,6 +10,7 @@ class MainController:
         self.tk_root = Tk()
         self.main_view = view.init_gui(self.tk_root)
         self.main_view.player_controls.play_button.bind("<Button>", self.on_pressed_play)
+        self.main_view.player_controls.record_button.bind("<Button>", self.on_pressed_record)
 
     def run(self):
         self.load_defaults()
@@ -34,6 +35,19 @@ class MainController:
         else:
             self.main_view.player_controls.set_playing(False)
             self.player.stop()
+
+    def on_pressed_record(self, event):
+        if not self.main_view.player_controls.is_recoding():
+            self.main_view.player_controls.set_recoding(True)
+            settings = self.main_view.settings_panel.get_settings()
+            settings['record'] = True
+            self.player.start(settings, self.on_started_playing)
+        else:
+            self.main_view.player_controls.set_recoding(False)
+            self.player.stop_recoding()
+
+
+# RMS => v_ref = max_value_ps
 
 
 if __name__ == '__main__':
