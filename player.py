@@ -101,6 +101,11 @@ class Player:
         self.data = np.fromstring(frame_data, np.int16)
         self.fft()
 
+    def DB_meter (self):
+        rms = np.sqrt(np.mean(np.square(self.data)))
+        db = 20*np.log10(rms/32767)
+        print(db)
+
     def fft(self):
         if self.chunk_size is None or self.data is None:
             return
