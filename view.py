@@ -145,16 +145,22 @@ def init_gui(tk_root):
 class Plotter:
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
-    y_axis = [0, -50]
+    y_axis = [1, 0, -10, -20, -30, -40, -50]
 
     def __init__(self, indata):
         self.x = []
         self.y = []
         self.streamdata = indata
 
+    def get_x(self):
+        return self.x
+
+    def get_y(self):
+        return self.y
+
     def animate(self, i, x, y):
         self.x.append(dt.datetime.now().strftime(str(i)))
-        self.y.append(self.streamdata.dB_meter)
+        self.y.append(self.streamdata.dB_meter())
 
         self.x = self.x[-15:]
         self.y = self.y[-15:]
@@ -171,7 +177,7 @@ class Plotter:
 
 def plot_run(data):
     plotobj = Plotter(data)
-
-    ani = animation.FuncAnimation(plotobj.fig, plotobj.animate, fargs=(plotobj.x, plotobj.y), interval=(data.get_chunk_size()/data.get_sample_rate)*1e3)
-    plt.show()
-
+    if data.get_chunk_size() is not None:
+        ani = animation.FuncAnimation(plotobj.fig, plotobj.animate, fargs=(plotobj.get_x(), plotobj.get_y()), interval=(100/6))
+        plt.show()
+#data.get_chunk_size()/data.get_sample_rate())*1e3

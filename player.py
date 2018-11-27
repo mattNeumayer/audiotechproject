@@ -76,10 +76,12 @@ class Player:
                 input=True,
                 input_device_index=input_device['index'],
                 output_device_index=output_device['index'],
-                stream_callback=stream_callback
+                stream_callback=stream_callback,
+                frames_per_buffer=1024
             )
 
             self.sample_rate = sample_rate
+            self.chunk_size = 1024
             self.stream.start_stream()
             callback(True)
 
@@ -98,15 +100,17 @@ class Player:
         if self.record:
             self.recoding_data.append(frame_data)
 
-        self.data = np.fromstring(frame_data, np.int16)
+        self.data = np.fromstring(frame_data, np.int16).astype(np.float32)/np.power(2, 15)
         self.fft()
 
     def dB_meter(self):
-        if self.data is not None:
-            rms = rms_func(self.data, np.int16)  # TODO hardcoded datatype
-            dB = 20 * np.log10(rms)
-            return dB
-        return 0
+        if self.chunk_size is None and self.data is None:
+            return 0
+
+        rms = rms_func(self.data)  # TODO hardcoded datatype
+        dB = 20 * np.log10(rms+np.finfo(np.float32).eps)
+        print(dB)
+        return dB
 
     def fft(self):
         if self.chunk_size is None or self.data is None:
@@ -126,11 +130,7 @@ class Player:
         return self.chunk_size
 
 
-def rms_func(data, width):
+def rms_func(data):
     """Avoids using Audioop"""
-    if len(data) == 0:
-        return 0
-    from_type = (np.int8, np.int16, np.int32)[width//2]
-    float_data = np.frombuffer(data, from_type).astype(np.float)
-    rms = np.sqrt(np.mean(float_data**2))
-    return int(rms)
+    rms = np.sqrt(np.mean(data**2))
+    return rms
