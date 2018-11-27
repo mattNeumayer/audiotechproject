@@ -23,6 +23,8 @@ class MainController:
         if started_playing:
             print("STARTED PLAYING")
             self.main_view.player_controls.set_playing(True)
+            view.plot_run(self.player)
+
         else:
             print("ERROR")
             self.main_view.player_controls.set_playing(False)

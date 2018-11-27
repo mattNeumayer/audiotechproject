@@ -1,6 +1,6 @@
 import pyaudio
 import numpy as np
-import matplotlib.pyplot as plt
+
 
 class Player:
     def __init__(self):
@@ -101,10 +101,12 @@ class Player:
         self.data = np.fromstring(frame_data, np.int16)
         self.fft()
 
-    def DB_meter (self):
-        rms = np.sqrt(np.mean(np.square(self.data)))
-        db = 20*np.log10(rms/32767)
-        print(db)
+    def dB_meter(self):
+        if self.data is not None:
+            rms = rms_func(self.data, np.int16)  # TODO hardcoded datatype
+            dB = 20 * np.log10(rms)
+            return dB
+        return 0
 
     def fft(self):
         if self.chunk_size is None or self.data is None:
@@ -112,7 +114,23 @@ class Player:
 
         y = np.fft.fft(self.data[0:self.chunk_size])
         diff = int(20 * np.log10(np.sum(np.abs(y / self.chunk_size)**2))) - self.avg
-        print(diff)
+        # print(diff)
 
         self.avg = self.avg + diff / self.n
         self.n += 1
+
+    def get_sample_rate(self):
+        return self.sample_rate
+
+    def get_chunk_size(self):
+        return self.chunk_size
+
+
+def rms_func(data, width):
+    """Avoids using Audioop"""
+    if len(data) == 0:
+        return 0
+    from_type = (np.int8, np.int16, np.int32)[width//2]
+    float_data = np.frombuffer(data, from_type).astype(np.float)
+    rms = np.sqrt(np.mean(float_data**2))
+    return int(rms)
