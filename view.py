@@ -2,7 +2,6 @@ import tkinter as tk
 from tkinter import ttk
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-import datetime as dt
 
 
 class PlayerControlsGUI(tk.Frame):
@@ -145,7 +144,7 @@ def init_gui(tk_root):
 class Plotter:
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
-    y_axis = [1, 0, -10, -20, -30, -40, -50]
+    y_axis = [0, -10, -20, -30, -40, -50]
 
     def __init__(self, indata):
         self.x = []
@@ -159,7 +158,7 @@ class Plotter:
         return self.y
 
     def animate(self, i, x, y):
-        self.x.append(dt.datetime.now().strftime(str(i)))
+        self.x.append(str(i))
         self.y.append(self.streamdata.dB_meter())
 
         self.x = self.x[-15:]
@@ -169,7 +168,7 @@ class Plotter:
         self.ax.plot(self.x, self.y)
 
         plt.xticks(rotation=25, ha='right')
-        plt.yticks(ticks=self.y_axis)
+        plt.yticks(self.y_axis)
         plt.subplots_adjust(bottom=0.30)
         plt.title('dB Meter')
         plt.ylabel('dB')
