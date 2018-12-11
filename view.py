@@ -91,7 +91,8 @@ class VSTControlGUI(tk.Frame):
             filetypes=[("VST plugins", "*.dll")],
             title="Choose a plugin."
         )
-        if filename is not None and self.load_plugin():
+        if filename is not None:
+            self.load_plugin(filename)
             self.file_label['text'] = filename
             self.file_label.grid(row=0, column=1, sticky=tk.W)
 
@@ -301,10 +302,12 @@ class MainGUI(tk.Frame):
 
         self.settings_panel = SettingsGUI(self)
         self.wav_player = WAVPlayerGUI(self)
+        self.vst_control = VSTControlGUI(self)
         self.player_controls = PlayerControlsGUI(self)
 
         self.settings_panel.pack(fill=tk.X, padx=10, pady=10)
         self.wav_player.pack(fill=tk.X, padx=10, pady=10)
+        self.vst_control.pack(fill=tk.X, padx=10, pady=10)
         self.player_controls.pack(fill=tk.X, padx=10, pady=10)
 
 

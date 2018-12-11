@@ -18,10 +18,10 @@ class MainController:
 
         self.main_view.player_controls.play_button.bind("<Button>", self.on_pressed_play)
         self.main_view.wav_player.connect_wav_player(self.wav_player)
+        self.main_view.vst_control.set_load_plugin(self.load_plugin)
 
     def run(self):
         self.load_defaults()
-        self.load_plugin("plugins/Scarlett Gate 64.dll")
         self.tk_root.mainloop()
 
     def load_defaults(self):
@@ -55,8 +55,14 @@ class MainController:
 
     def load_plugin(self, name):
         new_plugin = self.vst.load_plugin(name)
-        if new_plugin is not None and new_plugin.has_editor():
+
+        if new_plugin is None:
+            return False
+
+        if new_plugin.has_editor():
             self.vst_window = view.VSTWindow(self.main_view, plugin=new_plugin)
+
+        return True
 
 
 if __name__ == '__main__':
