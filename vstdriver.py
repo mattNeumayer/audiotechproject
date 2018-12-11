@@ -57,12 +57,14 @@ class VSTDriver:
         self.frame_pointer += 1
 
     def drive(self, frame_data):
-        output = numpy.zeros((self.plugins[0].get_number_of_outputs(), 2048), dtype=numpy.float64)
-        self.plugins[0].process(
-            frame_data,
-            output
-        )
-        return output
+        if len(self.plugins) > 0:
+            output = numpy.zeros((self.plugins[0].get_number_of_outputs(), 2048), dtype=numpy.float64)
+            self.plugins[0].process(
+                frame_data,
+                output
+            )
+        else:
+            return frame_data
 
     def plot(self, NFFT=8192, noverlap=1024):
         pyplot.figure()
