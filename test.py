@@ -1,61 +1,106 @@
-import pyaudio
-import wave
-import sys
+#!/usr/bin/env python
+import scipy
+import scipy.io
+from scipy.io import wavfile
 import time
+import wave
 
-if len(sys.argv) < 2:
-    print("Plays a wave file.\n\nUsage: %s filename.wav" % sys.argv[0])
-    sys.exit(-1)
+import matplotlib.pyplot as pyplot
+import numpy
 
-# instantiate PyAudio (1)
-print(pyaudio.paWASAPI)
-p = pyaudio.PyAudio()
+import audiohelper
+import wavrecorder
+import wavplayer
 
-wasapi_info = p.get_host_api_info_by_type(pyaudio.paWASAPI)
-print(wasapi_info)
+from vstplugin import VSTPlugin
 
-for i in range(p.get_device_count()):
-    print(p.get_device_info_by_index(i))
-input_device = p.get_device_info_by_index(wasapi_info['defaultInputDevice'])
-output_device = p.get_device_info_by_index(wasapi_info['defaultOutputDevice'])
-
-print(input_device)
-print(output_device)
-
-# define callback (2)
-def callback(in_data, frame_count, time_info, status):
-    print(time_info)
-    return (in_data, pyaudio.paContinue)
+FreqMax = 20000
 
 
-print(p.is_format_supported(int(output_device['defaultSampleRate']),
-                            input_device=wasapi_info['defaultInputDevice'],
-                            input_channels=3,
-                            input_format=pyaudio.paInt16,
-                            output_device=wasapi_info['defaultOutputDevice'],
-                            output_channels=2,
-                            output_format=pyaudio.paInt16))
+def raise_gui(plugin):
+    import wx
 
-# open stream using callback (3)
-stream = p.open(format=pyaudio.paInt16,
-                channels=2,
-                rate=int(output_device['defaultSampleRate']),
-                output=True,
-                input=True,
-                input_device_index=wasapi_info['defaultInputDevice'],
-                output_device_index= wasapi_info['defaultOutputDevice'],
-                stream_callback=callback)
+    app = wx.App()
+    frame = wx.Frame(None, -1, "Plugin editor")
 
-# start the stream (4)
-stream.start_stream()
+    plugin.open_edit(frame.GetHandle())
+    rect = plugin.get_erect()
+    frame.SetClientSize((rect.right, rect.bottom))
+    frame.Show()
+    app.MainLoop()
+    plugin.close_edit()
 
-# wait for stream to finish (5)
-while stream.is_active():
-    time.sleep(0.1)
 
-# stop stream (6)
-stream.stop_stream()
-stream.close()
+def display(plugin, input1, input2):
+    output = numpy.zeros((plugin.number_of_outputs, player.file.getnframes()), dtype=numpy.float64)
 
-# close PyAudio (7)
-p.terminate()
+    for i in range(int(player.file.getnframes() / 2048)):
+        plugin.process([input1[i * 2048:(i + 1) * 2048], input2[i * 2048:(i + 1) * 2048]],
+                       output[:, i * 2048:(i + 1) * 2048])
+
+    return (input1, input2), output
+
+
+def plot(inputs, outputs, NFFT=8192, noverlap=1024):
+    pyplot.figure()
+    a = pyplot.subplot(2, len(outputs), 1)
+    pyplot.title("Input L")
+    pyplot.specgram(inputs[0], NFFT=NFFT, Fs=44100, noverlap=noverlap)
+    # pyplot.plot(inputs[0])
+    if len(outputs) > 1:
+        a = pyplot.subplot(2, 2, 2)
+        pyplot.title("Input R")
+        pyplot.specgram(inputs[1], NFFT=NFFT, Fs=44100, noverlap=noverlap)
+        # pyplot.plot(inputs[1])
+
+    a = pyplot.subplot(2, len(outputs), len(outputs) + 1)
+    pyplot.title("Output L")
+    pyplot.specgram(outputs[0], NFFT=NFFT, Fs=44100, noverlap=noverlap)
+    # pyplot.plot(outputs[0])
+    if len(outputs) > 1:
+        a = pyplot.subplot(2, 2, 4)
+        pyplot.title("Output R")
+        pyplot.specgram(outputs[1], NFFT=NFFT, Fs=44100, noverlap=noverlap)
+        # pyplot.plot(outputs[1])
+
+
+player = wavplayer.WavPlayer()
+player.load("test.wav")
+inputwav = player.get_frames_numpy(player.file.getnframes())
+inputwav1 = inputwav[0, :]
+inputwav2 = inputwav[1, :]
+
+
+nframes = player.file.getnframes()
+sample_rate = player.file.getframerate()
+
+t = numpy.arange(nframes, dtype=numpy.float64) / sample_rate
+inputsin1 = numpy.sin(numpy.pi * (sample_rate * FreqMax / nframes * (t + .1)) * t)
+inputsin2 = inputsin1[::-1].flatten()
+
+
+
+plugin = VSTPlugin("plugins/Scarlett Gate 64.dll")
+plugin.open()
+plugin.set_sample_rate(44100)
+plugin.set_block_size(2048)
+
+if plugin.has_editor():
+    raise_gui(plugin)
+plugin.resume()
+inputs, outputs = display(plugin, inputwav1, inputwav2)
+plugin.suspend()
+
+print(inputwav1.shape)
+
+recorder = wavrecorder.WavRecorder("test_out_vst.wav")
+recorder.set_params(2, 2, sample_rate, nframes)
+
+out_frames = audiohelper.convert_frame_from_numpy_to_bytes(outputs)
+print(outputs.shape)
+recorder.write_byte_frames(out_frames)
+recorder.stop()
+
+plot(inputs, outputs)
+pyplot.show()
+
